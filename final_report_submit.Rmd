@@ -1,13 +1,12 @@
 
 ---
 title: "Team Project 2: Estrogen Bioassay and Voting in NC"
-author: "Caleb ONeel, Junbo Guan, Nikhil Bhargava, Rhayoung Park, Xiaohan Yang"
+author: "Caleb(Coordinator), Junbo(Presenter), Nikhil(Checker), Rhayoung(Coder), Xiaohan(Writer)"
 date: "10/18/20"
-output:
-  html_document:
-    highlight: pygments
-    theme: spacelab
-  pdf_document: default
+output: 
+    pdf_document:
+      latex_engine: xelatex
+always_allow_html: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -34,9 +33,13 @@ library(tidyverse)
 require(gridExtra)
 library(broom)
 library(sjPlot)
+library(ggpubr)
+
 ```
 
+
 * * *
+\newpage
 
 ## Part I: Estrogen Bioassay
 
@@ -54,8 +57,8 @@ bio$weight_bin[bio$weight<100] <- "small"
 bio$weight_bin[bio$weight>=100] <- "big"
 bio$weight_bin <-factor(bio$weight_bin)
 
-history <- read.csv('../Data/history_stats_20161108.txt',sep = '\t', header = T)
-voter <- read.csv('../Data/voter_stats_20161108.txt',sep = ' ', header = T)
+history <- read.csv('history_stats_20161108.csv',sep = '\t', header = T)
+voter <- read.csv('voter_stats_20161108.csv',sep = ' ', header = T)
 
 history <- subset(history, select = -c(election_date, stats_type, update_date))
 # drop the row in history where age is 'Age < 18 Or Invalid Birth Dates'
@@ -111,26 +114,29 @@ The distribution of the response variable was plotted. The histogram showed that
 
 After plotting graphs with predictors on the x-axis and the log of uterus weights on the y-axis, we decided to bin the predictor weight. As shown in the plot, there is a notable difference in the two groups of rats. One group of rats were immature and small, and the other were mature and big. A new predictor ‘weight_bin’ was made by assigning rats with weight smaller than 100mg to ‘small’ and rats with weights larger than 100mg to ‘big’.
 
-```{r}
-ggplot(bio, aes(x=weight, y=log(uterus))) + geom_point()
+```{r,include=TRUE,fig.width=3, fig.height=3.5, echo=FALSE}
+plot1<- ggplot(bio, aes(x=weight, y=log(uterus))) + geom_point()
 ```
 
 Another interesting finding was that log uterus differed by lab. Labs such as Basf and Poulenc had smaller log uterus whereas Huntingd and Citijapa had larger log uterus weights. 
 
-```{r}
-ggplot(bio,
+```{r,include=TRUE,fig.width=8, fig.height=3.5, echo=FALSE}
+plot2 <- ggplot(bio,
 aes(x=lab, y=log(uterus), fill=lab)) +
 geom_boxplot() +
 labs(title="Log uterus weight by lab",
 x="Lab",y="Log uterus") + theme_classic() +
 theme(legend.position="none",axis.text.x = element_text(angle = 90))
+
+figure <- ggarrange(plot1,plot2,
+          ncol = 2, nrow = 1)
+figure
+
 ```
 
 Moreover, the effect of ZM dose to log uterus weight seemed to differ by protocol. The slopes for ZM vs. Log uterus facet wrapped by lab also seemed to show little difference. 
 
-```{r}
-par(mfrow=c(1,2))
-ggplot(bio, aes(x=ZM, y=log(uterus))) + geom_point() + facet_wrap(~protocol) + geom_smooth(method="lm",col="red3") 
+```{r,include=TRUE,echo=FALSE}
 ggplot(bio, aes(x=ZM, y=log(uterus))) + geom_point()  + facet_wrap(~lab) + geom_smooth(method="lm",col="red3") 
 ```
 
@@ -145,9 +151,8 @@ final_model_q1 <- lmer(log(uterus) ~ EE + ZM + weight_bin + (1|lab) + (EE+ZM|pro
 
 When examining the model, there are no clear violations of the linearity, normality, equal variance, and independence assumptions. The fixed variables in the model are also not correlated with one another.
 
-```{r}
-tab_model(final_model_q1)
-```
+![Summary](/Users/롸/Desktop/oneone.png){width=50%}
+
 
 The baseline uterus weight, on average, for the rats in the study that are large, had no dose of estrogen agonist, had no dose of estrogen antagonist, is 130.32 mg. 
 
@@ -164,14 +169,17 @@ From the analysis above, we can tell that the protocol-level variance is small a
 The estimated standard error 0.43 describes the unexplained variance in the log of uterus weights that isn’t explained by our other variables, holding everything else constant. 
 
 
-```{r}
-par(mfrow=c(1,2))
-dotplot.ranef.mer(ranef(final_model_q1,condVar=TRUE))
+```{r,include=TRUE,fig.width=8, fig.height=3.5, echo=FALSE}
+plot6 <- dotplot.ranef.mer(ranef(final_model_q1,condVar=TRUE))$lab
+plot7 <- dotplot.ranef.mer(ranef(final_model_q1,condVar=TRUE))$protocol
+figure3 <- ggarrange(plot6,plot7,
+          ncol = 2, nrow = 1)
+figure3
 ```
 
 ### Conclusion
 
-Our statistical analysis provided answers to the questions we had at the offset of the experiment. Our final model supported the hypothesis that an increase in EE (estrogen agonist) did correspond to a weight gain in the rats uterus, and that an increase in ZM dosage (estrogen antagonist) led to a decrease in the weight of the uterus. The final model also concluded that there is variation in the uterus’s weight when grouping by laboratory. Although the variation is small, it is apparent from our results that the laboratory where an experiment was conducted does lead to variance in the weight of the uterus. Finally, it appears that the protocol appears to have some effect on the sensitivity of the rat’s reaction to  EE and ZM, it is not enough to be significant.  
+Our statistical analysis provided answers to the questions we had at the offset of the experiment. Our final model supported the hypothesis that an increase in EE (estrogen agonist) did correspond to a weight gain in the rats uterus, and that an increase in ZM dosage (estrogen antagonist) led to a decrease in the weight of the uterus. The final model also concluded that there is variation in the uterus’s weight when grouping by laboratory. Although the variation is small, it is apparent from our results that the laboratory where an experiment was conducted does lead to variance in the weight of the uterus. Finally, it appears that the protocol appears to have some slight effect on the sensitivity of the rat’s reaction to  EE and ZM. We would recommend using Protocol A which had immature female rats given oral gavage as it is the most sensitive group. 
 
 While we are confident in the results of our analysis, we do believe there are potential limitations to this study. Although this data has a substantial amount of aggregate, we were ultimately attempting to break it down by different laboratories, protocols and groups that received EE or ZM as opposed to a control group. When all these factors are taken into consideration, the number of observations we have for each subset of the data becomes a bit thin. Although we do not know if this factor ultimately came into play, there is always an increased risk that reporting or procedures vary when the different laboratories span different countries and continents. This can sometimes lead to slightly different methods in data collection and recording that may occur.
 
@@ -202,16 +210,20 @@ Before starting the analysis, the predictors ‘age’, ‘party’, ‘race’,
 
 The plot showing turnout rate vs. party affiliation by race revealed that there appears to be a difference in turnout rates among different party affiliation and race. For mixed race, American Indians and the unknown race group, the median turnout rate for the Libertarian party was higher than the democratic party. This was not the case for black and white voters; black libertarian and white libertarian showed slightly lower turnout rates compared to black democrats and white democrats.
 
-```{r,include=TRUE, echo=FALSE}
-ggplot(agg_subdata, aes(x=Party, y=turnout, fill=Party)) + geom_boxplot() + scale_fill_brewer(palette="Reds") +  labs(title="Party vs Turnout by Race", x="Sex",y="turnout") + theme_classic() + theme(legend.position="none") + facet_wrap(~Race)
+```{r,include=TRUE,fig.width=8, fig.height=3.5, echo=FALSE}
+plot3 <- ggplot(agg_subdata, aes(x=Party, y=turnout, fill=Party)) + geom_boxplot() + scale_fill_brewer(palette="Reds") +  labs(title="Party vs Turnout by Race", x="Sex",y="turnout") + theme_classic() + theme(legend.position="none") + facet_wrap(~Race)
 ```
 
 The relationship between sex and turnout rate by party also appears to show a difference among these groups. Female libertarians tend to show up less compared to female democrats, but male libertarians showed up more compared to male democrats. The median turnout value for unknown libertarians was much higher than unknown democrats.  
 
-```{r,include=TRUE, echo=FALSE}
-ggplot(agg_subdata, aes(x=Party, y=turnout, fill=Party)) + geom_boxplot() + scale_fill_brewer(palette="Reds") +  labs(title="Sex vs Turnout", x="Sex",y="turnout") + theme_classic() + theme(legend.position="none") + facet_wrap(~Sex)
+```{r,include=TRUE,fig.width=8, fig.height=3.5, echo=FALSE}
+plot4 <- ggplot(agg_subdata, aes(x=Party, y=turnout, fill=Party)) + geom_boxplot() + scale_fill_brewer(palette="Reds") +  labs(title="Sex vs Turnout", x="Sex",y="turnout") + theme_classic() + theme(legend.position="none") + facet_wrap(~Sex)
+
+figure2 <- ggarrange(plot3,plot4,
+          ncol = 2, nrow = 1)
+figure2
 ```
-We also drew a plot to check if turnout rate varied by county. As shown in the plot below, counties such as Ashe, Hyde and Chatham showed high turnout rates whereas Hoke and Pasquotank showed relatively low turnout rates. 
+We also drew a plot to check if turnout rate varied by county. As shown in the plot, counties such as Ashe, Hyde and Chatham showed high turnout rates whereas Hoke and Pasquotank showed relatively low turnout rates. 
 
 ```{r,include=TRUE, echo=FALSE}
 ggplot(agg_subdata,
@@ -219,26 +231,26 @@ aes(x=County, y=turnout, fill=County)) +geom_boxplot() +
 labs(title="Turnout rate by county", x="County",y="Turnout Rate") + theme_classic() + theme(legend.position="none",axis.text.x = element_text(angle = 90))
 ```
 
+
+```{r}
+modelfinal <- glmer(cbind(Total_voter_his, (Total_voter_voter - Total_voter_his)) ~ Age + Sex + Race + Party + (1 | County) + Sex:Party + Race:Party, data = agg_subdata, family = binomial(link = 'logit'))
+```
+
 ### Model
-#### Model Selection
 
 We selected our final model using ANOVA f-tests. All the predictors are categorical variables, so there is no need to center or make any transformation.
 
 Our main goal is to identify and estimate groups that voted in the 2016 election out of those who registered. Thus, we want to keep all the predictors in our null model. Since we are curious about if the overall log odds of voting differs by county in the 2016 election, we introduced varying intercepts to our model and added county as the group variable. Furthermore, we are interested in whether the turnout rates differ between females and males for the different party affiliations, so we added the interaction term between sex and party to our null model. 
 We tried to explore every possible interaction term between the four predictors. For each interaction term, we added it to the null model and did the ANOVA test. It turns out that every interaction term has a small p-value, which means every interaction term is statistically significant to our model. Since we have such a large amount of relevant data, every interaction term turned out to be statistically significant. Therefore, we decided to focus on adding interaction terms that seemed to be relevant based on our EDA and scientific significance, and included the interaction between race and party in our final model.
 
-```{r,include=TRUE, echo=FALSE}
-modelfinal <- glmer(cbind(Total_voter_his, (Total_voter_voter - Total_voter_his)) ~ Age + Sex + Race + Party + (1 | County) + Sex:Party + Race:Party, data = agg_subdata, family = binomial(link = 'logit'))
-tab_model(modelfinal)
-```
+![Vote](/Users/롸/Desktop/votefinal.png){width=80%}
 
-#### Model Assessment
 
 The model’s binned residual plot revealed a few problems due to a trend that follows a linear pattern where when the log odds of turnout increases, the average residual decreases. Moreover, about 35% of the observations were outside the two standard error lines. Specifically, when the turnout rate was lower than 0.65, over half of the observations lie outside the 2-SE lines; when the turnout rate was higher than or equal to 0.65, over 95% of the observations lie in between the 2-SE lines.
 
 From the binned residual plot, we can conclude our model fits the data better when the turnout rate is higher versus when it is lower. This is acceptable since the goal of this analysis is not to predict turnout rate but to identify and estimate demographic groups that voted in the 2016 election out of those who registered. One reason for what we saw may be due to a decent amount of rows with null values being removed, and most of those null values seem to be due to low turnout in that demographic group and that a large part of these null values represents 0. If that holds true, then the missing data is not at random and we bias our analysis slightly.
 
-```{r,include=TRUE, echo=FALSE}
+``````{r,include=TRUE,fig.width=8, fig.height=3.5, echo=FALSE}
 rawresid1 <- residuals(modelfinal,"resp")
 #binned residual plots
 binnedplot(x=fitted(modelfinal),y=rawresid1,xlab="Turnout rate",
@@ -247,10 +259,6 @@ col.int="red4",ylab="Avg. residuals",main="Binned residual plot",col.pts="navy")
 ```
 
 We also compared the AIC and BIC values for our null model and final model (include the interaction term between race and party), our final model has lower AIC and BIC values, which means our final model fits the data slightly better than the null model. 
-
-#### Model Interpretation:
-
-##### Fixed Effect
 
 The intercept is 0.19, which means that a registered Asian female democrat voter within the age range of 18 to 25, the odds of turnout is 1.21.
 
@@ -264,11 +272,9 @@ For the interaction between party and sex, we set female democrat voters as the 
 
 For the interaction between race and party, Asian democrat voters were the baseline. The odds of turnout decreased by 40% when the voter was black and republican. For American Indian libertarian voters, odds of turnout increase significantly by 306%. For white Republican voters, odds of turnout increase by 62%. For mixed-race republican voters, odds of turnout increase by 65%.
 
-##### Random Effect
-
 The county-level standard deviation is 0.17 which describes the cross-county variation attributed to the random intercept. The counties do vary, but not much. As shown in the plot, the counties Hoke, Pasquotank, Gates, and Chatham appear to be outliers. Keeping other variables constant, the odds of turnout in Hoke, Pasquotank, and Gates is significantly lower than other counties whereas registered voters in Chatham are much more likely to show up and vote. Although the county-level variance is small, every county does differ from each other, which confirms our assumption of varying intercepts by county.
 
-```{r,include=TRUE, echo=FALSE}
+```{r,include=TRUE,fig.width=8, fig.height=4, echo=FALSE}
 dotplot(ranef(modelfinal,condVar=TRUE))$County
 ```
 
@@ -279,5 +285,148 @@ There is a potential limitation for this analysis. As mentioned in the data clea
 
 * * *
 
+\newpage
 
+## Appendix 
+
+1. Appendix for Q1.
+
+1.1 Histogram for the response variable
+
+```{r}
+hist(log(bio$uterus))
+```
+
+
+1.2 Variable EE versus Log uterus
+
+```{r}
+ggplot(bio, aes(x=EE, y=log(uterus))) + geom_point()
+```
+
+
+1.3 EDA for EE
+
+```{r}
+ggplot(bio, aes(x=EE, y=log(uterus))) + geom_point() + facet_wrap(~protocol)
+ggplot(bio, aes(x=EE, y=log(uterus))) + geom_point() + facet_wrap(~lab)
+ggplot(bio, aes(x=EE, y=log(uterus))) + geom_point() + facet_wrap(~group)
+```
+
+1.4 EDA for ZM
+
+```{r}
+#facet-wrap by protocol, lab, group
+ggplot(bio, aes(x=ZM, y=log(uterus))) + geom_point() + facet_wrap(~protocol) + geom_smooth(method="lm",col="red3")
+```
+```{r}
+ggplot(bio, aes(x=ZM, y=log(uterus))) + geom_point()  + facet_wrap(~lab) + geom_smooth(method="lm",col="red3")
+```
+
+```{r}
+ggplot(bio, aes(x=ZM, y=log(uterus))) + geom_point() + facet_wrap(~group)+ geom_smooth(method="lm",col="red3")
+```
+
+1.5 Binned weight and Log uterus
+
+```{r}
+ggplot(bio, aes(x=weight_bin, y=log(uterus), fill=weight_bin)) + geom_boxplot() + coord_flip() + scale_fill_brewer(palette="Reds") +  labs(title="Binned Weight vs Log Uterus",
+       x="Binned Weight",y="Log Uterus") +
+  theme_classic() + theme(legend.position="none")
+```
+
+
+2. Appendix for Q2
+
+2.1 Histogram for the response variable
+
+```{r}
+hist(agg_subdata$turnout)
+```
+
+2.2 EDA for Age
+
+```{r}
+ggplot(agg_subdata, aes(x=Age, y=turnout, fill=Age)) + geom_boxplot() + scale_fill_brewer(palette="Reds") +  labs(title="Sex vs Turnout", x="Sex",y="turnout") + theme_classic() + theme(legend.position="none")
+```
+
+```{r}
+ggplot(agg_subdata, aes(x=Age, y=turnout, fill=Age)) + geom_boxplot() + scale_fill_brewer(palette="Reds") +  labs(title="Sex vs Turnout", x="Sex",y="turnout") + theme_classic() + theme(legend.position="none") + facet_wrap(~County)
+```
+
+```{r}
+ggplot(agg_subdata, aes(x=Age, y=turnout, fill=Age)) + geom_boxplot() + scale_fill_brewer(palette="Reds") +  labs(title="Sex vs Turnout", x="Sex",y="turnout") + theme_classic() + theme(legend.position="none") + facet_wrap(~Sex)
+```
+
+```{r}
+ggplot(agg_subdata, aes(x=Age, y=turnout, fill=Age)) + geom_boxplot() + scale_fill_brewer(palette="Reds") +  labs(title="Sex vs Turnout", x="Sex",y="turnout") + theme_classic() + theme(legend.position="none") + facet_wrap(~Race)
+```
+
+```{r}
+ggplot(agg_subdata, aes(x=Age, y=turnout, fill=Age)) + geom_boxplot() + scale_fill_brewer(palette="Reds") +  labs(title="Sex vs Turnout", x="Sex",y="turnout") + theme_classic() + theme(legend.position="none") + facet_wrap(~Party)
+```
+
+
+2.3 EDA for Sex
+
+```{r}
+ggplot(agg_subdata, aes(x=Sex, y=turnout, fill=Sex)) + geom_boxplot() + scale_fill_brewer(palette="Reds") +  labs(title="Sex vs Turnout", x="Sex",y="turnout") + theme_classic() + theme(legend.position="none")
+```
+
+```{r}
+ggplot(agg_subdata, aes(x=Sex, y=turnout, fill=Sex)) + geom_boxplot() + scale_fill_brewer(palette="Reds") +  labs(title="Sex vs Turnout", x="Sex",y="turnout") + theme_classic() + theme(legend.position="none") + facet_wrap(~Party)
+```
+
+```{r}
+ggplot(agg_subdata, aes(x=Sex, y=turnout, fill=Sex)) + geom_boxplot() + scale_fill_brewer(palette="Reds") +  labs(title="Sex vs Turnout by Age", x="Sex",y="turnout") + theme_classic() + theme(legend.position="none") + facet_wrap(~Age)
+```
+
+```{r}
+ggplot(agg_subdata, aes(x=Sex, y=turnout, fill=Sex)) + geom_boxplot() + scale_fill_brewer(palette="Reds") +  labs(title="Sex vs Turnout", x="Sex",y="turnout") + theme_classic() + theme(legend.position="none") + facet_wrap(~County)
+```
+
+```{r}
+ggplot(agg_subdata, aes(x=Sex, y=turnout, fill=Sex)) + geom_boxplot() + scale_fill_brewer(palette="Reds") +  labs(title="Sex vs Turnout by Race", x="Sex",y="turnout") + theme_classic() + theme(legend.position="none") + facet_wrap(~Race)
+```
+
+
+2.4 EDA for Party
+
+```{r}
+ggplot(agg_subdata, aes(x=Party, y=turnout, fill=Party)) + geom_boxplot() + scale_fill_brewer(palette="Reds") +  labs(title="Sex vs Turnout", x="Sex",y="turnout") + theme_classic() + theme(legend.position="none")
+```
+
+
+```{r}
+ggplot(agg_subdata, aes(x=Party, y=turnout, fill=Party)) + geom_boxplot() + scale_fill_brewer(palette="Reds") +  labs(title="Sex vs Turnout", x="Sex",y="turnout") + theme_classic() + theme(legend.position="none") + facet_wrap(~County)
+```
+
+```{r}
+ggplot(agg_subdata, aes(x=Party, y=turnout, fill=Party)) + geom_boxplot() + scale_fill_brewer(palette="Reds") +  labs(title="Sex vs Turnout", x="Sex",y="turnout") + theme_classic() + theme(legend.position="none") + facet_wrap(~Sex)
+```
+
+```{r}
+ggplot(agg_subdata, aes(x=Party, y=turnout, fill=Party)) + geom_boxplot() + scale_fill_brewer(palette="Reds") +  labs(title="Sex vs Turnout", x="Sex",y="turnout") + theme_classic() + theme(legend.position="none") + facet_wrap(~Age)
+```
+
+
+
+2.5 EDA for Race
+
+```{r}
+ggplot(agg_subdata, aes(x=Race, y=turnout, fill=Race)) + geom_boxplot() + scale_fill_brewer(palette="Reds") +  labs(title="Race vs Turnout", x="Race",y="turnout") + theme_classic() + theme(legend.position="none") + facet_wrap(~County)
+```
+
+
+```{r}
+ggplot(agg_subdata, aes(x=Race, y=turnout, fill=Race)) + geom_boxplot() + scale_fill_brewer(palette="Reds") +  labs(title="Race vs Turnout", x="Race",y="turnout") + theme_classic() + theme(legend.position="none") + facet_wrap(~Age)
+```
+
+```{r}
+ggplot(agg_subdata, aes(x=Race, y=turnout, fill=Race)) + geom_boxplot() + scale_fill_brewer(palette="Reds") +  labs(title="Race vs Turnout", x="Race",y="turnout") + theme_classic() + theme(legend.position="none") + facet_wrap(~Race)
+```
+
+```{r}
+ggplot(agg_subdata, aes(x=Race, y=turnout, fill=Race)) + geom_boxplot() + scale_fill_brewer(palette="Reds") +  labs(title="Race vs Turnout", x="Race",y="turnout") + theme_classic() + theme(legend.position="none") + facet_wrap(~Sex)
+```
 
